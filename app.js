@@ -643,12 +643,6 @@ function findNearestPuntoDalia() {
             const masCercano = distanciasConEstado[0];
             
             if (masCercano) {
-                // Centrar mapa en el punto más cercano
-                map.setView([masCercano.lat, masCercano.lng], 16);
-                
-                // Abrir popup del punto
-                masCercano.marker.openPopup();
-                
                 // Limpiar marcadores previos
                 if (userLocationMarker) {
                     map.removeLayer(userLocationMarker);
@@ -687,9 +681,15 @@ function findNearestPuntoDalia() {
                     }
                 ).addTo(map);
                 
-                // Ajustar vista para mostrar ambos puntos
+                // Centrar el mapa en el punto Dalia encontrado con zoom apropiado
                 setTimeout(() => {
-                    map.fitBounds(rutaActual.getBounds(), { padding: [50, 50] });
+                    // Primero centrar en el punto Dalia
+                    map.setView([masCercano.lat, masCercano.lng], 17);
+                    
+                    // Luego abrir el popup
+                    setTimeout(() => {
+                        masCercano.marker.openPopup();
+                    }, 300);
                 }, 100);
             }
             
@@ -915,7 +915,7 @@ function puntoMasCercanoEnSegmento(punto, p1, p2) {
 // CALCULAR RUTA POR EJES VIALES
 // ======================================
 function calcularRutaPorEjesViales(origenLat, origenLng, destinoLat, destinoLng) {
-    // Si no hay ejes viales, retornar línea recta
+    // Si no hay ejes viales, retornar línea recta simple
     if (!ejesVialesData || !ejesVialesData.features || ejesVialesData.features.length === 0) {
         return [[origenLat, origenLng], [destinoLat, destinoLng]];
     }
@@ -929,84 +929,26 @@ function calcularRutaPorEjesViales(origenLat, origenLng, destinoLat, destinoLng)
         return [[origenLat, origenLng], [destinoLat, destinoLng]];
     }
     
-    // Construir ruta aproximada
+    // Construir ruta simplificada (sin puntos intermedios complejos)
     const puntosRuta = [];
     
     // 1. Desde origen hasta eje vial más cercano
     puntosRuta.push([origenLat, origenLng]);
-    puntosRuta.push([ejeOrigen.punto.lat, ejeOrigen.punto.lng]);
     
-    // 2. Buscar puntos intermedios en ejes viales entre origen y destino
-    const puntosIntermedios = encontrarPuntosIntermediosEnEjes(
-        ejeOrigen.punto,
-        ejeDestino.punto,
-        5 // Máximo 5 puntos intermedios
-    );
+    // Si el origen está muy cerca del eje (menos de 50 metros), no mostrar el segmento
+    if (ejeOrigen.distanciaAlEje > 50) {
+        puntosRuta.push([ejeOrigen.punto.lat, ejeOrigen.punto.lng]);
+    }
     
-    puntosRuta.push(...puntosIntermedios);
+    // 2. Línea directa al eje del destino (representando el recorrido por calles)
+    if (ejeDestino.distanciaAlEje > 50) {
+        puntosRuta.push([ejeDestino.punto.lat, ejeDestino.punto.lng]);
+    }
     
-    // 3. Hasta el eje vial del destino
-    puntosRuta.push([ejeDestino.punto.lat, ejeDestino.punto.lng]);
-    
-    // 4. Finalmente al destino
+    // 3. Finalmente al destino
     puntosRuta.push([destinoLat, destinoLng]);
     
     return puntosRuta;
-}
-
-// ======================================
-// ENCONTRAR PUNTOS INTERMEDIOS EN EJES
-// ======================================
-function encontrarPuntosIntermediosEnEjes(puntoInicio, puntoFin, maxPuntos) {
-    const puntosIntermedios = [];
-    
-    // Calcular dirección general
-    const deltaLat = puntoFin.lat - puntoInicio.lat;
-    const deltaLng = puntoFin.lng - puntoInicio.lng;
-    const distanciaTotal = Math.sqrt(deltaLat * deltaLat + deltaLng * deltaLng);
-    
-    // Si la distancia es muy corta, no agregar intermedios
-    if (distanciaTotal < 0.005) { // Aproximadamente 500 metros
-        return puntosIntermedios;
-    }
-    
-    // Buscar puntos de ejes viales que estén entre origen y destino
-    const segmentosRelevantes = [];
-    
-    ejesVialesData.features.forEach(feature => {
-        if (feature.geometry.type === 'MultiLineString') {
-            feature.geometry.coordinates.forEach(lineString => {
-                for (let i = 0; i < lineString.length; i++) {
-                    const punto = { lat: lineString[i][1], lng: lineString[i][0] };
-                    
-                    // Verificar si el punto está entre el origen y destino
-                    const distAlInicio = calcularDistancia(puntoInicio.lat, puntoInicio.lng, punto.lat, punto.lng);
-                    const distAlFin = calcularDistancia(punto.lat, punto.lng, puntoFin.lat, puntoFin.lng);
-                    const distDirecta = calcularDistancia(puntoInicio.lat, puntoInicio.lng, puntoFin.lat, puntoFin.lng);
-                    
-                    // Si está en el camino (con un margen del 20%)
-                    if (distAlInicio + distAlFin < distDirecta * 1.2) {
-                        segmentosRelevantes.push({
-                            punto: punto,
-                            distDesdeInicio: distAlInicio
-                        });
-                    }
-                }
-            });
-        }
-    });
-    
-    // Ordenar por distancia desde el inicio
-    segmentosRelevantes.sort((a, b) => a.distDesdeInicio - b.distDesdeInicio);
-    
-    // Tomar puntos equidistantes
-    const paso = Math.max(1, Math.floor(segmentosRelevantes.length / (maxPuntos + 1)));
-    
-    for (let i = paso; i < segmentosRelevantes.length && puntosIntermedios.length < maxPuntos; i += paso) {
-        puntosIntermedios.push([segmentosRelevantes[i].punto.lat, segmentosRelevantes[i].punto.lng]);
-    }
-    
-    return puntosIntermedios;
 }
 
 // ======================================
