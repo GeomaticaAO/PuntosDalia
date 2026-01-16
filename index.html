@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Geoportal Dalia - Encuentra los puntos Dalia más cercanos">
+    <meta name="theme-color" content="#922B21">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Geoportal Dalia</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <h1><i class="fas fa-map-marker-alt"></i> Puntos Dalia</h1>
+            <button id="menuBtn" class="menu-btn" aria-label="Menú">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mapa -->
+    <div id="map"></div>
+
+    <!-- Botón de ubicación -->
+    <button id="locationBtn" class="floating-btn location-btn" aria-label="Mi ubicación">
+        <i class="fas fa-crosshairs"></i>
+    </button>
+    
+    <!-- Botón de punto más cercano -->
+    <button id="nearestBtn" class="floating-btn nearest-btn" title="Punto Dalia más cercano">
+        <i class="fas fa-search"></i>
+    </button>
+
+    <!-- Panel lateral (oculto por defecto) -->
+    <div id="sidePanel" class="side-panel">
+        <div class="panel-header">
+            <h2>Filtros</h2>
+            <button id="closePanel" class="close-btn" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="panel-content">
+            <div class="filter-section">
+                <label for="searchInput">
+                    <i class="fas fa-search"></i> Buscar punto
+                </label>
+                <input type="text" id="searchInput" placeholder="Nombre del punto..." />
+            </div>
+            
+            <div class="filter-section">
+                <label for="tipoFilter">
+                    <i class="fas fa-filter"></i> Tipo
+                </label>
+                <select id="tipoFilter">
+                    <option value="">Todos los tipos</option>
+                </select>
+            </div>
+
+            <div class="info-section">
+                <h3><i class="fas fa-info-circle"></i> Información</h3>
+                <p id="totalPuntos">Cargando puntos...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay para cerrar el panel -->
+    <div id="overlay" class="overlay"></div>
+
+    <!-- Loading indicator -->
+    <div id="loadingIndicator" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>Cargando Puntos Dalia...</p>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- PapaParse para procesar CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- Script principal -->
+    <script src="app.js"></script>
+</body>
+</html>
