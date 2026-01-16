@@ -9,6 +9,7 @@ const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 let map;
 let markersLayer;
 let allMarkers = [];
+let filteredMarkers = []; // Marcadores actualmente visibles
 let allData = [];
 let userLocationMarker = null;
 let userLocationCircle = null;
@@ -360,6 +361,9 @@ function filterMarkers() {
     filtered.forEach(item => {
         markersLayer.addLayer(item.marker);
     });
+    
+    // Actualizar marcadores filtrados para búsqueda
+    filteredMarkers = filtered;
 
     updateInfo(filtered.length);
 }
@@ -579,15 +583,25 @@ function findNearestPuntoDalia() {
             
             console.log('📍 Ubicación del usuario:', userLat, userLng);
             
+            // Usar marcadores filtrados si hay filtros activos, sino usar todos
+            const marcadoresParaBuscar = filteredMarkers.length > 0 ? filteredMarkers : allMarkers;
+            
+            if (marcadoresParaBuscar.length === 0) {
+                alert('No hay puntos Dalia disponibles con los filtros actuales');
+                btn.innerHTML = '<i class="fas fa-search"></i>';
+                btn.disabled = false;
+                return;
+            }
+            
             // Si hay ejes viales, calcular ruta caminable
             let distancias;
             if (ejesVialesData && ejesVialesData.features && ejesVialesData.features.length > 0) {
                 console.log('🛣️ Calculando rutas con ejes viales...');
-                distancias = calcularDistanciasConEjesViales(userLat, userLng, allMarkers);
+                distancias = calcularDistanciasConEjesViales(userLat, userLng, marcadoresParaBuscar);
             } else {
                 console.log('⚠️ Calculando distancias en línea recta (sin ejes viales)...');
                 // Calcular distancias en línea recta si no hay ejes viales
-                distancias = allMarkers.map(item => {
+                distancias = marcadoresParaBuscar.map(item => {
                     const puntoLat = parseFloat(item.data.Latitud);
                     const puntoLng = parseFloat(item.data.Longitud);
                     const distancia = calcularDistancia(userLat, userLng, puntoLat, puntoLng);
