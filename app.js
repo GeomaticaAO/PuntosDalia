@@ -305,19 +305,23 @@ function createPopupContent(data) {
     }
     
     if (contacto) {
-        // Separar múltiples teléfonos (por comas, punto y coma, "y", "/", "|")
-        const separadores = /[,;\/\|]|\sy\s|\sY\s/;
-        const telefonos = contacto.split(separadores).map(t => t.trim()).filter(t => t);
+        // Primero, eliminar paréntesis y extraer todos los números
+        // Separar múltiples teléfonos por diversos separadores: comas, punto y coma, "y", "/", "|", paréntesis
+        const separadores = /[\(\),;\/\|]|\sy\s|\sY\s/g;
+        const telefonos = contacto
+            .split(separadores)
+            .map(t => t.trim())
+            .filter(t => t && t.length > 0);
         
         if (telefonos.length > 1) {
             // Múltiples teléfonos
             let telefonosHTML = telefonos.map(tel => {
                 const telLimpio = tel.replace(/\D/g, '');
                 if (telLimpio.length >= 10) {
-                    return `<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline;">${tel}</a>`;
+                    return `<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline; margin: 0 4px;">${tel}</a>`;
                 }
                 return tel;
-            }).join(' / ');
+            }).join(' ');
             content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${telefonosHTML}</p>`;
         } else {
             // Un solo teléfono
