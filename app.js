@@ -305,31 +305,46 @@ function createPopupContent(data) {
     }
     
     if (contacto) {
-        // Primero, eliminar paréntesis y extraer todos los números
-        // Separar múltiples teléfonos por diversos separadores: comas, punto y coma, "y", "/", "|", paréntesis
-        const separadores = /[\(\),;\/\|]|\sy\s|\sY\s/g;
-        const telefonos = contacto
-            .split(separadores)
-            .map(t => t.trim())
-            .filter(t => t && t.length > 0);
+        // Detectar si hay extensión entre paréntesis al final
+        const conExtension = contacto.match(/^(.+?)\s*\((.+?)\)\s*$/);
         
-        if (telefonos.length > 1) {
-            // Múltiples teléfonos
-            let telefonosHTML = telefonos.map(tel => {
-                const telLimpio = tel.replace(/\D/g, '');
-                if (telLimpio.length >= 10) {
-                    return `<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline; margin: 0 4px;">${tel}</a>`;
-                }
-                return tel;
-            }).join(' ');
-            content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${telefonosHTML}</p>`;
-        } else {
-            // Un solo teléfono
-            const telefonoLimpio = contacto.replace(/\D/g, '');
-            if (telefonoLimpio.length >= 10) {
-                content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> <a href="tel:${telefonoLimpio}" style="color: #922B21; text-decoration: underline;">${contacto}</a></p>`;
+        if (conExtension) {
+            // Hay extensión: formato "número (extensión)"
+            const numeroBase = conExtension[1].trim();
+            const extension = conExtension[2].trim();
+            
+            const telLimpio = numeroBase.replace(/\D/g, '');
+            if (telLimpio.length >= 10) {
+                content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> <a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline;">${numeroBase}</a> <span style="color: #666;">Ext: ${extension}</span></p>`;
             } else {
                 content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${contacto}</p>`;
+            }
+        } else {
+            // Sin extensión - puede tener múltiples números separados
+            const separadores = /[,;\/\|]|\sy\s|\sY\s/g;
+            const telefonos = contacto
+                .split(separadores)
+                .map(t => t.trim())
+                .filter(t => t && t.length > 0);
+            
+            if (telefonos.length > 1) {
+                // Múltiples teléfonos
+                let telefonosHTML = telefonos.map(tel => {
+                    const telLimpio = tel.replace(/\D/g, '');
+                    if (telLimpio.length >= 10) {
+                        return `<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline; margin: 0 4px;">${tel}</a>`;
+                    }
+                    return tel;
+                }).join(' ');
+                content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${telefonosHTML}</p>`;
+            } else {
+                // Un solo teléfono
+                const telefonoLimpio = contacto.replace(/\D/g, '');
+                if (telefonoLimpio.length >= 10) {
+                    content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> <a href="tel:${telefonoLimpio}" style="color: #922B21; text-decoration: underline;">${contacto}</a></p>`;
+                } else {
+                    content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${contacto}</p>`;
+                }
             }
         }
     }
