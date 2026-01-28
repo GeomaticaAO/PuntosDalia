@@ -664,24 +664,37 @@ function disablePageZoom() {
 }
 
 function resetPageZoom() {
-    // Forzar el zoom a 1.0
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
-        // Temporalmente permitir zoom
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        // Método 1: Cambiar temporalmente a un valor diferente para forzar recalculo
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes');
         
-        // Forzar reset del zoom
+        // Forzar reflow
+        void document.body.offsetHeight;
+        
         setTimeout(() => {
+            // Método 2: Restablecer al estado normal
             viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
             
-            // Intentar restablecer el zoom del documento
-            if (document.body.style.zoom) {
-                document.body.style.zoom = 1;
+            // Método 3: Usar visualViewport API si está disponible
+            if (window.visualViewport && window.visualViewport.scale !== 1) {
+                // Forzar scroll que puede ayudar a resetear
+                const currentScroll = window.scrollY;
+                window.scrollTo(0, currentScroll + 1);
+                window.scrollTo(0, currentScroll);
             }
             
-            // Método alternativo para navegadores móviles
-            window.scrollTo(0, 0);
-        }, 100);
+            // Método 4: Resetear zoom del body y html
+            document.documentElement.style.zoom = '1';
+            document.body.style.zoom = '1';
+            
+            // Método 5: Manipular el DOM para forzar re-render
+            document.body.style.transform = 'scale(1)';
+            
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 50);
+        }, 50);
     }
 }
 
@@ -702,19 +715,28 @@ function closePdfModal() {
     const modal = document.getElementById('pdfModal');
     modal.classList.remove('active');
     
-    // Deshabilitar zoom y restablecer
-    disablePageZoom();
-    resetPageZoom();
-    
-    // Limpiar PDF
+    // Limpiar PDF primero
     pdfDoc = null;
     currentPage = 1;
     const canvas = document.getElementById('pdfCanvas');
-    const context = canvas.getContext('2d');
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas) {
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    }
     
     // Remover listener de ESC
     document.removeEventListener('keydown', closePdfOnEsc);
+    
+    // Deshabilitar zoom y restablecer (con un pequeño delay para asegurar que el modal se cierre primero)
+    setTimeout(() => {
+        disablePageZoom();
+        resetPageZoom();
+        
+        // Forzar que el mapa recalcule su tamaño
+        if (map) {
+            map.invalidateSize();
+        }
+    }, 100);
 }
 
 function closePdfOnEsc(e) {
