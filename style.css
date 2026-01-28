@@ -437,6 +437,8 @@ html, body {
     background: rgba(0, 0, 0, 0.95);
     z-index: 10000;
     animation: fadeIn 0.3s ease;
+    isolation: isolate; /* Aislar el stacking context */
+    touch-action: none; /* Prevenir gestos por defecto */
 }
 
 .pdf-modal.active {
@@ -454,6 +456,7 @@ html, body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    touch-action: auto; /* Permitir gestos dentro del contenido */
 }
 
 .pdf-modal-header {

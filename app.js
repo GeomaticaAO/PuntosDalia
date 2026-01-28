@@ -648,9 +648,50 @@ const HIGH_QUALITY_SCALE = 4.0; // Escala muy alta para máxima calidad
 // Configurar PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+// Funciones para controlar el zoom de la página
+function enablePageZoom() {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+    }
+}
+
+function disablePageZoom() {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    }
+}
+
+function resetPageZoom() {
+    // Forzar el zoom a 1.0
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+        // Temporalmente permitir zoom
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        
+        // Forzar reset del zoom
+        setTimeout(() => {
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            
+            // Intentar restablecer el zoom del documento
+            if (document.body.style.zoom) {
+                document.body.style.zoom = 1;
+            }
+            
+            // Método alternativo para navegadores móviles
+            window.scrollTo(0, 0);
+        }, 100);
+    }
+}
+
 function openPdfModal() {
     const modal = document.getElementById('pdfModal');
     modal.classList.add('active');
+    
+    // Habilitar zoom temporalmente solo para el modal
+    enablePageZoom();
+    
     loadPdf();
     
     // Cerrar con la tecla ESC
@@ -660,6 +701,10 @@ function openPdfModal() {
 function closePdfModal() {
     const modal = document.getElementById('pdfModal');
     modal.classList.remove('active');
+    
+    // Deshabilitar zoom y restablecer
+    disablePageZoom();
+    resetPageZoom();
     
     // Limpiar PDF
     pdfDoc = null;
