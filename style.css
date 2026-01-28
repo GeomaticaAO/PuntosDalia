@@ -443,18 +443,15 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 0;
 }
 
 .pdf-modal-content {
     position: relative;
     width: 100%;
-    max-width: 1200px;
-    height: 90vh;
+    height: 100%;
     background: #2c2c2c;
-    border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
 }
@@ -544,15 +541,19 @@ html, body {
     overflow: auto;
     background: #2c2c2c;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 20px;
+    padding: 10px;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
 }
 
 .pdf-viewer canvas {
-    max-width: 100%;
+    max-width: none;
     height: auto;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 @keyframes fadeIn {
@@ -566,17 +567,6 @@ html, body {
 
 /* Responsive para móviles */
 @media (max-width: 768px) {
-    .pdf-modal.active {
-        padding: 0;
-    }
-    
-    .pdf-modal-content {
-        width: 100%;
-        height: 100vh;
-        border-radius: 0;
-        max-width: none;
-    }
-    
     .pdf-modal-header h3 {
         font-size: 1rem;
     }
@@ -597,7 +587,7 @@ html, body {
     }
     
     .pdf-viewer {
-        padding: 10px;
+        padding: 5px;
     }
 }
 

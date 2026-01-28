@@ -643,6 +643,7 @@ let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
 const PDF_URL = 'archivos/Modelo.pdf';
+const HIGH_QUALITY_SCALE = 4.0; // Escala muy alta para máxima calidad
 
 // Configurar PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -700,21 +701,39 @@ async function renderPage(pageNum) {
         const canvas = document.getElementById('pdfCanvas');
         const context = canvas.getContext('2d');
         
-        // Calcular escala para ajustar al contenedor
-        const container = document.querySelector('.pdf-viewer');
-        const containerWidth = container.clientWidth - 40; // padding
+        // Obtener el viewport base
         const viewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(containerWidth / viewport.width, 2.0);
-        const scaledViewport = page.getViewport({ scale: scale });
         
-        // Configurar canvas
-        canvas.width = scaledViewport.width;
-        canvas.height = scaledViewport.height;
+        // Calcular escala para ajustar al ancho del contenedor
+        const container = document.querySelector('.pdf-viewer');
+        const containerWidth = container.clientWidth - 20;
+        const fitScale = containerWidth / viewport.width;
         
-        // Renderizar página
+        // Usar una escala muy alta para renderizado (4x la escala de ajuste)
+        const renderScale = fitScale * HIGH_QUALITY_SCALE;
+        const renderViewport = page.getViewport({ scale: renderScale });
+        
+        // Multiplicar por devicePixelRatio para pantallas de alta densidad
+        const outputScale = window.devicePixelRatio || 1;
+        
+        // Configurar canvas a máxima resolución
+        canvas.width = renderViewport.width * outputScale;
+        canvas.height = renderViewport.height * outputScale;
+        
+        // Establecer el tamaño visual al ajuste del contenedor
+        const displayWidth = viewport.width * fitScale;
+        const displayHeight = viewport.height * fitScale;
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+        
+        // Ajustar contexto para la escala de salida
+        const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+        
+        // Renderizar página con máxima calidad
         const renderContext = {
             canvasContext: context,
-            viewport: scaledViewport
+            viewport: renderViewport,
+            transform: transform
         };
         
         await page.render(renderContext).promise;
