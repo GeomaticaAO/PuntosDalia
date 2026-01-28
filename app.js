@@ -21,6 +21,12 @@ let rutaActual = null;
 // INICIALIZACIÓN
 // ======================================
 document.addEventListener('DOMContentLoaded', function() {
+    // Asegurar que el viewport esté correctamente configurado al cargar
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    }
+    
     initMap();
     initEventListeners();
     loadData();
@@ -666,35 +672,23 @@ function disablePageZoom() {
 function resetPageZoom() {
     const viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
-        // Método 1: Cambiar temporalmente a un valor diferente para forzar recalculo
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=10.0, user-scalable=yes');
+        // Restablecer directamente al estado normal sin cambios temporales
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
         
-        // Forzar reflow
-        void document.body.offsetHeight;
+        // Resetear estilos de zoom
+        document.documentElement.style.zoom = '';
+        document.body.style.zoom = '';
+        document.body.style.transform = '';
         
+        // Forzar scroll a la parte superior
+        window.scrollTo(0, 0);
+        
+        // Si el mapa existe, invalidar su tamaño después de un momento
         setTimeout(() => {
-            // Método 2: Restablecer al estado normal
-            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-            
-            // Método 3: Usar visualViewport API si está disponible
-            if (window.visualViewport && window.visualViewport.scale !== 1) {
-                // Forzar scroll que puede ayudar a resetear
-                const currentScroll = window.scrollY;
-                window.scrollTo(0, currentScroll + 1);
-                window.scrollTo(0, currentScroll);
+            if (window.map) {
+                window.map.invalidateSize();
             }
-            
-            // Método 4: Resetear zoom del body y html
-            document.documentElement.style.zoom = '1';
-            document.body.style.zoom = '1';
-            
-            // Método 5: Manipular el DOM para forzar re-render
-            document.body.style.transform = 'scale(1)';
-            
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 50);
-        }, 50);
+        }, 100);
     }
 }
 
@@ -727,16 +721,13 @@ function closePdfModal() {
     // Remover listener de ESC
     document.removeEventListener('keydown', closePdfOnEsc);
     
-    // Deshabilitar zoom y restablecer (con un pequeño delay para asegurar que el modal se cierre primero)
+    // Restablecer viewport inmediatamente
+    disablePageZoom();
+    
+    // Después de cerrar el modal, resetear el zoom y ajustar el mapa
     setTimeout(() => {
-        disablePageZoom();
         resetPageZoom();
-        
-        // Forzar que el mapa recalcule su tamaño
-        if (map) {
-            map.invalidateSize();
-        }
-    }, 100);
+    }, 50);
 }
 
 function closePdfOnEsc(e) {
