@@ -506,6 +506,15 @@ html, body {
     flex-wrap: wrap;
 }
 
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    border-left: 1px solid #555;
+    border-right: 1px solid #555;
+}
+
 .pdf-nav-btn,
 .pdf-download-btn {
     background: var(--primary-color);
@@ -521,7 +530,7 @@ html, body {
     transition: all 0.3s ease;
 }
 
-.pdf-nav-btn:hover,
+.pdf-nav-btn:hover:not(:disabled),
 .pdf-download-btn:hover {
     background: var(--primary-dark);
 }
@@ -548,15 +557,17 @@ html, body {
     justify-content: center;
     padding: 10px;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y pinch-zoom;
 }
 
 .pdf-viewer canvas {
     max-width: none;
     height: auto;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    cursor: grab;
+}
+
+.pdf-viewer canvas:active {
+    cursor: grabbing;
 }
 
 @keyframes fadeIn {

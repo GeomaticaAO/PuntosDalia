@@ -21,12 +21,6 @@ let rutaActual = null;
 // INICIALIZACIÓN
 // ======================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Asegurar que el viewport esté correctamente configurado al cargar
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport) {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-    }
-    
     initMap();
     initEventListeners();
     loadData();
@@ -643,62 +637,25 @@ document.head.appendChild(popupStyles);
 console.log('🗺️ Geoportal Dalia cargado correctamente');
 
 // ======================================
-// MODAL PDF CON PDF.JS
+// MODAL PDF CON PDF.JS Y ZOOM CONTROLADO
 // ======================================
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
+let currentZoomLevel = 1.0; // Zoom del PDF (1.0 = 100%)
 const PDF_URL = 'archivos/Modelo.pdf';
-const HIGH_QUALITY_SCALE = 4.0; // Escala muy alta para máxima calidad
+const BASE_QUALITY_SCALE = 3.0; // Escala base para calidad
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3.0;
+const ZOOM_STEP = 0.25;
 
 // Configurar PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// Funciones para controlar el zoom de la página
-function enablePageZoom() {
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport) {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-    }
-}
-
-function disablePageZoom() {
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport) {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-    }
-}
-
-function resetPageZoom() {
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport) {
-        // Restablecer directamente al estado normal sin cambios temporales
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-        
-        // Resetear estilos de zoom
-        document.documentElement.style.zoom = '';
-        document.body.style.zoom = '';
-        document.body.style.transform = '';
-        
-        // Forzar scroll a la parte superior
-        window.scrollTo(0, 0);
-        
-        // Si el mapa existe, invalidar su tamaño después de un momento
-        setTimeout(() => {
-            if (window.map) {
-                window.map.invalidateSize();
-            }
-        }, 100);
-    }
-}
-
 function openPdfModal() {
     const modal = document.getElementById('pdfModal');
     modal.classList.add('active');
-    
-    // Habilitar zoom temporalmente solo para el modal
-    enablePageZoom();
-    
+    currentZoomLevel = 1.0;
     loadPdf();
     
     // Cerrar con la tecla ESC
@@ -709,9 +666,10 @@ function closePdfModal() {
     const modal = document.getElementById('pdfModal');
     modal.classList.remove('active');
     
-    // Limpiar PDF primero
+    // Limpiar PDF
     pdfDoc = null;
     currentPage = 1;
+    currentZoomLevel = 1.0;
     const canvas = document.getElementById('pdfCanvas');
     if (canvas) {
         const context = canvas.getContext('2d');
@@ -721,13 +679,12 @@ function closePdfModal() {
     // Remover listener de ESC
     document.removeEventListener('keydown', closePdfOnEsc);
     
-    // Restablecer viewport inmediatamente
-    disablePageZoom();
-    
-    // Después de cerrar el modal, resetear el zoom y ajustar el mapa
+    // Invalidar tamaño del mapa para asegurar que se vea bien
     setTimeout(() => {
-        resetPageZoom();
-    }, 50);
+        if (window.map) {
+            window.map.invalidateSize();
+        }
+    }, 100);
 }
 
 function closePdfOnEsc(e) {
@@ -767,27 +724,27 @@ async function renderPage(pageNum) {
         const containerWidth = container.clientWidth - 20;
         const fitScale = containerWidth / viewport.width;
         
-        // Usar una escala muy alta para renderizado (4x la escala de ajuste)
-        const renderScale = fitScale * HIGH_QUALITY_SCALE;
-        const renderViewport = page.getViewport({ scale: renderScale });
+        // Aplicar el zoom actual del usuario
+        const finalScale = fitScale * currentZoomLevel * BASE_QUALITY_SCALE;
+        const renderViewport = page.getViewport({ scale: finalScale });
         
         // Multiplicar por devicePixelRatio para pantallas de alta densidad
         const outputScale = window.devicePixelRatio || 1;
         
-        // Configurar canvas a máxima resolución
+        // Configurar canvas a alta resolución
         canvas.width = renderViewport.width * outputScale;
         canvas.height = renderViewport.height * outputScale;
         
-        // Establecer el tamaño visual al ajuste del contenedor
-        const displayWidth = viewport.width * fitScale;
-        const displayHeight = viewport.height * fitScale;
+        // Establecer el tamaño visual con el zoom aplicado
+        const displayWidth = viewport.width * fitScale * currentZoomLevel;
+        const displayHeight = viewport.height * fitScale * currentZoomLevel;
         canvas.style.width = displayWidth + 'px';
         canvas.style.height = displayHeight + 'px';
         
         // Ajustar contexto para la escala de salida
         const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
         
-        // Renderizar página con máxima calidad
+        // Renderizar página con alta calidad
         const renderContext = {
             canvasContext: context,
             viewport: renderViewport,
@@ -798,8 +755,11 @@ async function renderPage(pageNum) {
         
         // Actualizar controles
         updatePageInfo();
+        updateZoomDisplay();
         document.getElementById('prevPage').disabled = currentPage === 1;
         document.getElementById('nextPage').disabled = currentPage === totalPages;
+        document.getElementById('zoomOut').disabled = currentZoomLevel <= MIN_ZOOM;
+        document.getElementById('zoomIn').disabled = currentZoomLevel >= MAX_ZOOM;
     } catch (error) {
         console.error('Error al renderizar página:', error);
     }
@@ -807,6 +767,30 @@ async function renderPage(pageNum) {
 
 function updatePageInfo() {
     document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+}
+
+function updateZoomDisplay() {
+    const zoomPercent = Math.round(currentZoomLevel * 100);
+    document.getElementById('zoomLevel').textContent = `${zoomPercent}%`;
+}
+
+function zoomIn() {
+    if (currentZoomLevel < MAX_ZOOM) {
+        currentZoomLevel = Math.min(MAX_ZOOM, currentZoomLevel + ZOOM_STEP);
+        renderPage(currentPage);
+    }
+}
+
+function zoomOut() {
+    if (currentZoomLevel > MIN_ZOOM) {
+        currentZoomLevel = Math.max(MIN_ZOOM, currentZoomLevel - ZOOM_STEP);
+        renderPage(currentPage);
+    }
+}
+
+function resetZoom() {
+    currentZoomLevel = 1.0;
+    renderPage(currentPage);
 }
 
 function nextPage() {
@@ -847,6 +831,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const nextBtn = document.getElementById('nextPage');
     if (nextBtn) {
         nextBtn.addEventListener('click', nextPage);
+    }
+    
+    const zoomInBtn = document.getElementById('zoomIn');
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', zoomIn);
+    }
+    
+    const zoomOutBtn = document.getElementById('zoomOut');
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', zoomOut);
+    }
+    
+    const resetZoomBtn = document.getElementById('resetZoom');
+    if (resetZoomBtn) {
+        resetZoomBtn.addEventListener('click', resetZoom);
     }
     
     const downloadBtn = document.getElementById('downloadPdf');
