@@ -90,10 +90,27 @@
     <!-- Modal para PDF -->
     <div id="pdfModal" class="pdf-modal">
         <div class="pdf-modal-content">
-            <button id="closePdfModal" class="close-pdf-btn" aria-label="Cerrar">
-                <i class="fas fa-times"></i>
-            </button>
-            <iframe id="pdfIframe" src="" frameborder="0"></iframe>
+            <div class="pdf-modal-header">
+                <h3>Información del Punto Dalia</h3>
+                <button id="closePdfModal" class="close-pdf-btn" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="pdf-controls">
+                <button id="prevPage" class="pdf-nav-btn" title="Página anterior">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span id="pageInfo" class="page-info">Página 1 de 1</span>
+                <button id="nextPage" class="pdf-nav-btn" title="Página siguiente">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button id="downloadPdf" class="pdf-download-btn" title="Descargar PDF">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <div class="pdf-viewer">
+                <canvas id="pdfCanvas"></canvas>
+            </div>
         </div>
     </div>
 
@@ -102,6 +119,9 @@
     
     <!-- PapaParse para procesar CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- PDF.js para visualizar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
     <!-- Script principal -->
     <script src="app.js?v=2.1"></script>

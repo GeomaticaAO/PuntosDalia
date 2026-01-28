@@ -637,13 +637,20 @@ document.head.appendChild(popupStyles);
 console.log('🗺️ Geoportal Dalia cargado correctamente');
 
 // ======================================
-// MODAL PDF
+// MODAL PDF CON PDF.JS
 // ======================================
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
+const PDF_URL = 'archivos/Modelo.pdf';
+
+// Configurar PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
 function openPdfModal() {
     const modal = document.getElementById('pdfModal');
-    const iframe = document.getElementById('pdfIframe');
-    iframe.src = 'archivos/Modelo.pdf';
     modal.classList.add('active');
+    loadPdf();
     
     // Cerrar con la tecla ESC
     document.addEventListener('keydown', closePdfOnEsc);
@@ -651,9 +658,14 @@ function openPdfModal() {
 
 function closePdfModal() {
     const modal = document.getElementById('pdfModal');
-    const iframe = document.getElementById('pdfIframe');
     modal.classList.remove('active');
-    iframe.src = '';
+    
+    // Limpiar PDF
+    pdfDoc = null;
+    currentPage = 1;
+    const canvas = document.getElementById('pdfCanvas');
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
     
     // Remover listener de ESC
     document.removeEventListener('keydown', closePdfOnEsc);
@@ -665,11 +677,104 @@ function closePdfOnEsc(e) {
     }
 }
 
-// Event listener para el botón de cerrar modal
+async function loadPdf() {
+    try {
+        const loadingTask = pdfjsLib.getDocument(PDF_URL);
+        pdfDoc = await loadingTask.promise;
+        totalPages = pdfDoc.numPages;
+        
+        // Actualizar info de páginas
+        updatePageInfo();
+        
+        // Renderizar primera página
+        renderPage(currentPage);
+    } catch (error) {
+        console.error('Error al cargar PDF:', error);
+        alert('Error al cargar el documento PDF');
+    }
+}
+
+async function renderPage(pageNum) {
+    try {
+        const page = await pdfDoc.getPage(pageNum);
+        const canvas = document.getElementById('pdfCanvas');
+        const context = canvas.getContext('2d');
+        
+        // Calcular escala para ajustar al contenedor
+        const container = document.querySelector('.pdf-viewer');
+        const containerWidth = container.clientWidth - 40; // padding
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(containerWidth / viewport.width, 2.0);
+        const scaledViewport = page.getViewport({ scale: scale });
+        
+        // Configurar canvas
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        
+        // Renderizar página
+        const renderContext = {
+            canvasContext: context,
+            viewport: scaledViewport
+        };
+        
+        await page.render(renderContext).promise;
+        
+        // Actualizar controles
+        updatePageInfo();
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages;
+    } catch (error) {
+        console.error('Error al renderizar página:', error);
+    }
+}
+
+function updatePageInfo() {
+    document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+}
+
+function nextPage() {
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderPage(currentPage);
+    }
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderPage(currentPage);
+    }
+}
+
+function downloadPdf() {
+    const link = document.createElement('a');
+    link.href = PDF_URL;
+    link.download = 'Modelo_Punto_Dalia.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Event listeners para el modal PDF
 document.addEventListener('DOMContentLoaded', function() {
     const closePdfBtn = document.getElementById('closePdfModal');
     if (closePdfBtn) {
         closePdfBtn.addEventListener('click', closePdfModal);
+    }
+    
+    const prevBtn = document.getElementById('prevPage');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', prevPage);
+    }
+    
+    const nextBtn = document.getElementById('nextPage');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', nextPage);
+    }
+    
+    const downloadBtn = document.getElementById('downloadPdf');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', downloadPdf);
     }
     
     // Cerrar modal al hacer click fuera del contenido
