@@ -87,6 +87,16 @@
         <p>Cargando Puntos Dalia...</p>
     </div>
 
+    <!-- Modal para PDF -->
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-modal-content">
+            <button id="closePdfModal" class="close-pdf-btn" aria-label="Cerrar">
+                <i class="fas fa-times"></i>
+            </button>
+            <iframe id="pdfIframe" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
@@ -94,6 +104,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <!-- Script principal -->
-    <script src="app.js"></script>
+    <script src="app.js?v=2.1"></script>
 </body>
 </html>

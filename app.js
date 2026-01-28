@@ -278,6 +278,7 @@ function createMarker(data, lat, lng) {
 // ======================================
 function createPopupContent(data) {
     const nombre = data['Nombre del punto Dalia'] || 'Sin nombre';
+    const numeroPunto = data['Punto Dalia'] || data['Número'] || data['ID'] || '';
     const tipo = data['Tipo'] || '';
     const horario = data['Horario de atención'] || '';
     const direccion = data['Dirección'] || '';
@@ -286,7 +287,18 @@ function createPopupContent(data) {
     const googleMapsLink = data['Link de Google Maps'] || '';
 
     let content = `<div class="popup-content-custom">`;
-    content += `<h3>${nombre}</h3>`;
+    
+    // Título con número en círculo
+    if (numeroPunto) {
+        content += `
+            <div class="popup-header-with-number">
+                <span class="punto-dalia-number">${numeroPunto}</span>
+                <h3>${nombre}</h3>
+            </div>
+        `;
+    } else {
+        content += `<h3>${nombre}</h3>`;
+    }
     
     if (tipo) {
         content += `<p><strong><i class="fas fa-tag"></i> Tipo:</strong> ${tipo}</p>`;
@@ -349,9 +361,21 @@ function createPopupContent(data) {
         }
     }
     
+    // Contenedor de botones
     if (googleMapsLink) {
         const cleanLink = googleMapsLink.replace(/^"+|"+$/g, '').trim();
-        content += `<a href="${cleanLink}" target="_blank" class="popup-link"><i class="fas fa-route"></i> Cómo llegar</a>`;
+        content += `
+            <div class="popup-buttons-container">
+                <a href="${cleanLink}" target="_blank" class="popup-link"><i class="fas fa-route"></i> Cómo llegar</a>
+                <a href="javascript:void(0)" onclick="openPdfModal()" class="popup-link"><i class="fas fa-info-circle"></i> Más información</a>
+            </div>
+        `;
+    } else {
+        content += `
+            <div class="popup-buttons-container">
+                <a href="javascript:void(0)" onclick="openPdfModal()" class="popup-link"><i class="fas fa-info-circle"></i> Más información</a>
+            </div>
+        `;
     }
     
     content += `</div>`;
@@ -530,11 +554,32 @@ popupStyles.textContent = `
         margin: 15px;
         line-height: 1.6;
     }
+    .popup-header-with-number {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .punto-dalia-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 40px;
+        background: #922B21;
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        padding: 0 8px;
+    }
     .popup-content-custom h3 {
         color: #922B21;
-        margin: 0 0 12px 0;
+        margin: 0;
         font-size: 1.15rem;
         font-weight: 600;
+        flex: 1;
     }
     .popup-content-custom p {
         margin: 8px 0;
@@ -549,9 +594,18 @@ popupStyles.textContent = `
         width: 16px;
         display: inline-block;
     }
+    .popup-buttons-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
     .popup-link {
-        display: inline-block;
-        margin-top: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        min-width: 120px;
         padding: 10px 15px;
         background: #922B21;
         color: white !important;
@@ -581,6 +635,53 @@ popupStyles.textContent = `
 document.head.appendChild(popupStyles);
 
 console.log('🗺️ Geoportal Dalia cargado correctamente');
+
+// ======================================
+// MODAL PDF
+// ======================================
+function openPdfModal() {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+    iframe.src = 'archivos/Modelo.pdf';
+    modal.classList.add('active');
+    
+    // Cerrar con la tecla ESC
+    document.addEventListener('keydown', closePdfOnEsc);
+}
+
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+    modal.classList.remove('active');
+    iframe.src = '';
+    
+    // Remover listener de ESC
+    document.removeEventListener('keydown', closePdfOnEsc);
+}
+
+function closePdfOnEsc(e) {
+    if (e.key === 'Escape') {
+        closePdfModal();
+    }
+}
+
+// Event listener para el botón de cerrar modal
+document.addEventListener('DOMContentLoaded', function() {
+    const closePdfBtn = document.getElementById('closePdfModal');
+    if (closePdfBtn) {
+        closePdfBtn.addEventListener('click', closePdfModal);
+    }
+    
+    // Cerrar modal al hacer click fuera del contenido
+    const pdfModal = document.getElementById('pdfModal');
+    if (pdfModal) {
+        pdfModal.addEventListener('click', function(e) {
+            if (e.target === pdfModal) {
+                closePdfModal();
+            }
+        });
+    }
+});
 
 // ======================================
 // ENCONTRAR PUNTO DALIA MÁS CERCANO
