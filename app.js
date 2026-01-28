@@ -642,12 +642,11 @@ console.log('🗺️ Geoportal Dalia cargado correctamente');
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
-let currentZoomLevel = 1.0; // Zoom del PDF (1.0 = 100%)
+let currentZoomLevel = 1.0; // Zoom del PDF (1.0 = 100%, 4.0 = 400%)
 const PDF_URL = 'archivos/Modelo.pdf';
 const BASE_QUALITY_SCALE = 3.0; // Escala base para calidad
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 3.0;
-const ZOOM_STEP = 0.25;
+const NORMAL_ZOOM = 1.0; // 100%
+const MAX_ZOOM = 4.0; // 400%
 
 // Configurar PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -758,8 +757,6 @@ async function renderPage(pageNum) {
         updateZoomDisplay();
         document.getElementById('prevPage').disabled = currentPage === 1;
         document.getElementById('nextPage').disabled = currentPage === totalPages;
-        document.getElementById('zoomOut').disabled = currentZoomLevel <= MIN_ZOOM;
-        document.getElementById('zoomIn').disabled = currentZoomLevel >= MAX_ZOOM;
     } catch (error) {
         console.error('Error al renderizar página:', error);
     }
@@ -772,24 +769,39 @@ function updatePageInfo() {
 function updateZoomDisplay() {
     const zoomPercent = Math.round(currentZoomLevel * 100);
     document.getElementById('zoomLevel').textContent = `${zoomPercent}%`;
+    
+    // Actualizar estado de los botones
+    const zoomOutBtn = document.getElementById('zoomOut');
+    const zoomInBtn = document.getElementById('zoomIn');
+    
+    if (zoomOutBtn && zoomInBtn) {
+        if (currentZoomLevel === NORMAL_ZOOM) {
+            // En 100%, solo el botón de acercar está habilitado
+            zoomOutBtn.disabled = true;
+            zoomInBtn.disabled = false;
+        } else {
+            // En 400%, solo el botón de alejar está habilitado
+            zoomOutBtn.disabled = false;
+            zoomInBtn.disabled = true;
+        }
+    }
 }
 
 function zoomIn() {
-    if (currentZoomLevel < MAX_ZOOM) {
-        currentZoomLevel = Math.min(MAX_ZOOM, currentZoomLevel + ZOOM_STEP);
-        renderPage(currentPage);
-    }
+    // Acercar a 400%
+    currentZoomLevel = MAX_ZOOM;
+    renderPage(currentPage);
 }
 
 function zoomOut() {
-    if (currentZoomLevel > MIN_ZOOM) {
-        currentZoomLevel = Math.max(MIN_ZOOM, currentZoomLevel - ZOOM_STEP);
-        renderPage(currentPage);
-    }
+    // Volver a 100%
+    currentZoomLevel = NORMAL_ZOOM;
+    renderPage(currentPage);
 }
 
 function resetZoom() {
-    currentZoomLevel = 1.0;
+    // Restablecer a 100%
+    currentZoomLevel = NORMAL_ZOOM;
     renderPage(currentPage);
 }
 
