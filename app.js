@@ -693,11 +693,11 @@ console.log('🗺️ Geoportal Dalia cargado correctamente');
 let pdfDoc = null;
 let currentPage = 1;
 let totalPages = 0;
-let currentZoomLevel = 1.0; // Zoom del PDF (1.0 = 100%, 4.0 = 400%)
+let currentZoomLevel = 1.0; // Zoom del PDF (1.0 = 100%, 3.0 = 300%)
 const PDF_URL = 'archivos/Modelo.pdf';
 const BASE_QUALITY_SCALE = 3.0; // Escala base para calidad
 const NORMAL_ZOOM = 1.0; // 100%
-const MAX_ZOOM = 4.0; // 400%
+const MAX_ZOOM = 3.0; // 300%
 
 // Configurar PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
