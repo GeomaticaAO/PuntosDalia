@@ -59,7 +59,10 @@
                 <label for="searchInput">
                     <i class="fas fa-search"></i> Buscar punto
                 </label>
-                <input type="text" id="searchInput" placeholder="Nombre del punto..." />
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="searchInput" placeholder="Nombre del punto..." autocomplete="off" />
+                    <div id="autocompleteList" class="autocomplete-list"></div>
+                </div>
             </div>
             
             <div class="filter-section">

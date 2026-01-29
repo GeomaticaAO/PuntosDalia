@@ -114,8 +114,73 @@ function initEventListeners() {
     const searchInput = document.getElementById('searchInput');
     const tipoFilter = document.getElementById('tipoFilter');
 
-    searchInput.addEventListener('input', debounce(filterMarkers, 300));
+    searchInput.addEventListener('input', handleSearchInput);
     tipoFilter.addEventListener('change', filterMarkers);
+    
+    // Cerrar autocomplete al hacer click fuera
+    document.addEventListener('click', function(e) {
+        const autocompleteList = document.getElementById('autocompleteList');
+        if (!e.target.closest('.autocomplete-wrapper')) {
+            autocompleteList.classList.remove('active');
+        }
+    });
+}
+
+// ======================================
+// MANEJO DE AUTOCOMPLETADO
+// ======================================
+function handleSearchInput(e) {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    const autocompleteList = document.getElementById('autocompleteList');
+    
+    // Limpiar lista
+    autocompleteList.innerHTML = '';
+    
+    if (searchTerm === '') {
+        autocompleteList.classList.remove('active');
+        filterMarkers();
+        return;
+    }
+    
+    // Buscar coincidencias
+    const matches = allMarkers.filter(item => {
+        const nombre = (item.data['Nombre del punto Dalia'] || '').toLowerCase();
+        return nombre.includes(searchTerm);
+    }).slice(0, 8); // Limitar a 8 sugerencias
+    
+    if (matches.length === 0) {
+        autocompleteList.innerHTML = '<div class="autocomplete-no-results">No se encontraron puntos</div>';
+        autocompleteList.classList.add('active');
+        filterMarkers();
+        return;
+    }
+    
+    // Crear elementos de sugerencias
+    matches.forEach(item => {
+        const nombre = item.data['Nombre del punto Dalia'] || '';
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        
+        // Resaltar la parte que coincide
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        const nombreResaltado = nombre.replace(regex, '<strong>$1</strong>');
+        div.innerHTML = nombreResaltado;
+        
+        div.addEventListener('click', function() {
+            document.getElementById('searchInput').value = nombre;
+            autocompleteList.classList.remove('active');
+            filterMarkers();
+            
+            // Centrar mapa en el marcador seleccionado
+            map.setView(item.marker.getLatLng(), 16);
+            item.marker.openPopup();
+        });
+        
+        autocompleteList.appendChild(div);
+    });
+    
+    autocompleteList.classList.add('active');
+    filterMarkers();
 }
 
 // ======================================
@@ -317,47 +382,43 @@ function createPopupContent(data) {
     }
     
     if (contacto) {
-        // Detectar si hay extensión entre paréntesis al final
-        const conExtension = contacto.match(/^(.+?)\s*\((.+?)\)\s*$/);
+        // Detectar patrón: número (ext. X) número
+        const patron = /(\d+)\s*\(ext\.?\s*(\d+)\)/gi;
+        let resultado = contacto;
+        let numerosHTML = [];
         
+        // Primero, procesar números con extensión
+        const conExtension = contacto.match(/(\d+)\s*\(ext\.?\s*\d+\)/gi);
         if (conExtension) {
-            // Hay extensión: formato "número (extensión)"
-            const numeroBase = conExtension[1].trim();
-            const extension = conExtension[2].trim();
-            
-            const telLimpio = numeroBase.replace(/\D/g, '');
-            if (telLimpio.length >= 10) {
-                content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> <a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline;">${numeroBase}</a> <span style="color: #666;">Ext: ${extension}</span></p>`;
-            } else {
-                content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${contacto}</p>`;
-            }
-        } else {
-            // Sin extensión - puede tener múltiples números separados
-            const separadores = /[,;\/\|]|\sy\s|\sY\s/g;
-            const telefonos = contacto
-                .split(separadores)
-                .map(t => t.trim())
-                .filter(t => t && t.length > 0);
-            
-            if (telefonos.length > 1) {
-                // Múltiples teléfonos
-                let telefonosHTML = telefonos.map(tel => {
-                    const telLimpio = tel.replace(/\D/g, '');
-                    if (telLimpio.length >= 10) {
-                        return `<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline; margin: 0 4px;">${tel}</a>`;
-                    }
-                    return tel;
-                }).join(' ');
-                content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${telefonosHTML}</p>`;
-            } else {
-                // Un solo teléfono
-                const telefonoLimpio = contacto.replace(/\D/g, '');
-                if (telefonoLimpio.length >= 10) {
-                    content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> <a href="tel:${telefonoLimpio}" style="color: #922B21; text-decoration: underline;">${contacto}</a></p>`;
-                } else {
-                    content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${contacto}</p>`;
+            conExtension.forEach(match => {
+                const partes = match.match(/(\d+)\s*\(ext\.?\s*(\d+)\)/i);
+                const numero = partes[1];
+                const extension = partes[2];
+                
+                const telLimpio = numero.replace(/\D/g, '');
+                if (telLimpio.length >= 10) {
+                    const html = `<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline;">${numero}</a> <span style="color: #666; font-size: 0.9em;">(ext. ${extension})</span>`;
+                    numerosHTML.push(html);
+                    resultado = resultado.replace(match, '|||REEMPLAZADO|||');
                 }
-            }
+            });
+        }
+        
+        // Luego, procesar números sin extensión (los que quedaron)
+        const numerosSolos = resultado.match(/\d{10,}/g);
+        if (numerosSolos) {
+            numerosSolos.forEach(numero => {
+                const telLimpio = numero.replace(/\D/g, '');
+                if (telLimpio.length >= 10) {
+                    numerosHTML.push(`<a href="tel:${telLimpio}" style="color: #922B21; text-decoration: underline;">${numero}</a>`);
+                }
+            });
+        }
+        
+        if (numerosHTML.length > 0) {
+            content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong><br>${numerosHTML.join('<br>')}</p>`;
+        } else {
+            content += `<p><strong><i class="fas fa-phone"></i> Contacto:</strong> ${contacto}</p>`;
         }
     }
     
@@ -393,7 +454,7 @@ function filterMarkers() {
 
     const filtered = allMarkers.filter(item => {
         const nombre = (item.data['Nombre del punto Dalia'] || '').toLowerCase();
-        const tipo = item.data['Tipo'] || '';
+        const tipo = (item.data['Tipo'] || '').trim();
         
         const matchSearch = searchTerm === '' || nombre.includes(searchTerm);
         const matchTipo = tipoSelected === '' || tipo === tipoSelected;
