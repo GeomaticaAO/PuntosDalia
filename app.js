@@ -423,21 +423,11 @@ function createPopupContent(data) {
     }
     
     // Contenedor de botones
-    if (googleMapsLink) {
-        const cleanLink = googleMapsLink.replace(/^"+|"+$/g, '').trim();
-        content += `
-            <div class="popup-buttons-container">
-                <a href="${cleanLink}" target="_blank" class="popup-link"><i class="fas fa-route"></i> Cómo llegar</a>
-                <a href="javascript:void(0)" onclick="openPdfModal()" class="popup-link"><i class="fas fa-info-circle"></i> Más información</a>
-            </div>
-        `;
-    } else {
-        content += `
-            <div class="popup-buttons-container">
-                <a href="javascript:void(0)" onclick="openPdfModal()" class="popup-link"><i class="fas fa-info-circle"></i> Más información</a>
-            </div>
-        `;
-    }
+    content += `
+        <div class="popup-buttons-container">
+            <a href="javascript:void(0)" onclick="openPdfModal()" class="popup-link"><i class="fas fa-info-circle"></i> Más información</a>
+        </div>
+    `;
     
     content += `</div>`;
     return content;
