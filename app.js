@@ -144,8 +144,8 @@ function handleSearchInput(e) {
     
     // Buscar coincidencias
     const matches = allMarkers.filter(item => {
-        const nombre = (item.data['Nombre del punto Dalia'] || '').toLowerCase();
-        return nombre.includes(searchTerm);
+        const identificador = (item.data['Identificador Dalia'] || '').toLowerCase();
+        return identificador.includes(searchTerm);
     }).slice(0, 8); // Limitar a 8 sugerencias
     
     if (matches.length === 0) {
@@ -157,17 +157,17 @@ function handleSearchInput(e) {
     
     // Crear elementos de sugerencias
     matches.forEach(item => {
-        const nombre = item.data['Nombre del punto Dalia'] || '';
+        const identificador = item.data['Identificador Dalia'] || '';
         const div = document.createElement('div');
         div.className = 'autocomplete-item';
         
         // Resaltar la parte que coincide
         const regex = new RegExp(`(${searchTerm})`, 'gi');
-        const nombreResaltado = nombre.replace(regex, '<strong>$1</strong>');
-        div.innerHTML = nombreResaltado;
+        const identificadorResaltado = identificador.replace(regex, '<strong>$1</strong>');
+        div.innerHTML = identificadorResaltado;
         
         div.addEventListener('click', function() {
-            document.getElementById('searchInput').value = nombre;
+            document.getElementById('searchInput').value = identificador;
             autocompleteList.classList.remove('active');
             filterMarkers();
             
@@ -443,10 +443,10 @@ function filterMarkers() {
     markersLayer.clearLayers();
 
     const filtered = allMarkers.filter(item => {
-        const nombre = (item.data['Nombre del punto Dalia'] || '').toLowerCase();
+        const identificador = (item.data['Identificador Dalia'] || '').toLowerCase();
         const tipo = (item.data['Tipo'] || '').trim();
         
-        const matchSearch = searchTerm === '' || nombre.includes(searchTerm);
+        const matchSearch = searchTerm === '' || identificador.includes(searchTerm);
         const matchTipo = tipoSelected === '' || tipo === tipoSelected;
         
         return matchSearch && matchTipo;
